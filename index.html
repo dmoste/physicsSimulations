@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Elliptical Orbit Simulation</title>
+    <style>
+        canvas { border: 1px solid black; background-color: black; }
+        body { text-align: center; font-family: Arial, sans-serif; color: white; background-color: #222; }
+        input, button { margin: 5px; padding: 5px; }
+    </style>
+</head>
+<body>
+    <h2>Elliptical Orbit Simulation</h2>
+    <canvas id="orbitCanvas" width="600" height="600"></canvas>
+    <div>
+        <p>Star Mass: <span id="starMass">0</span> kg</p>
+        <p>Planet Mass: <span id="planetMass">0</span> kg</p>
+        <p>Current Speed: <span id="speed">0</span> m/s</p>
+        <p>Current Distance: <span id="distance">0</span> m</p>
+    </div>
+    <button id="pauseResume">Pause</button>
+    <div>
+        <label>Escape velocity at closest point: </label>
+        <input type="number" id="perihelionInput" placeholder="Enter velocity">
+        <button onclick="checkPrediction(true)">Check</button>
+        <p id="perihelionResult"></p>
+    </div>
+    <div>
+        <label>Escape velocity at furthest point: </label>
+        <input type="number" id="apoapsisInput" placeholder="Enter velocity">
+        <button onclick="checkPrediction(false)">Check</button>
+        <p id="apoapsisResult"></p>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("orbitCanvas");
+        const ctx = canvas.getContext("2d");
+        const pauseResumeButton = document.getElementById("pauseResume");
+        
+        const G = 6.67*Math.pow(10,-11);
+        const minCeiledStar = Math.ceil(Math.pow(10,23));
+        const maxFlooredStar = Math.floor(Math.pow(10,24));
+        const minCeiledPlanet = Math.ceil(Math.pow(10,17));
+        const maxFlooredPlanet = Math.floor(Math.pow(10,18));
+        const M = Math.floor(Math.random() * (maxFlooredStar - minCeiledStar) + minCeiledStar);
+        const P = Math.floor(Math.random() * (maxFlooredPlanet - minCeiledPlanet) + minCeiledPlanet);
+        const a = 200;
+        let e = Math.random() * 0.6 + 0.2;
+        const b = a * Math.sqrt(1 - e * e);
+        const f = a * e;
+        const starX = 300 + f;
+        
+        let theta = 0;
+        let running = true;
+        const starMass = document.getElementById("starMass");
+        const planetMass = document.getElementById("planetMass");
+        const speedEl = document.getElementById("speed");
+        const distanceEl = document.getElementById("distance");
+        let trace = [];
+
+        starMass.textContent = M.toExponential(2);
+        planetMass.textContent = P.toExponential(2);
+
+        function restartSimulation() {
+            location.reload();
+        }
+        
+        function checkPrediction(isPerihelion) {
+            let r = isPerihelion ? (a * (1 - e)) : (a * (1 + e));
+            let correctVesc = Math.sqrt((2 * G * M) / r);
+            let inputId = isPerihelion ? "perihelionInput" : "apoapsisInput";
+            let resultId = isPerihelion ? "perihelionResult" : "apoapsisResult";
+            
+            let userValue = parseFloat(document.getElementById(inputId).value);
+            running = false;
+            pauseResumeButton.textContent = "Resume"
+            if (Math.abs(userValue - correctVesc) < 2000) {
+                document.getElementById(resultId).textContent = `Correct! The escape velocity is ${correctVesc.toExponential(2)} m/s`;
+                document.getElementById(resultId).style.color = "green";
+            } else {
+                document.getElementById(resultId).textContent = `Incorrect. Correct value: ${correctVesc.toExponential(2)} m/s`;
+                document.getElementById(resultId).style.color = "red";
+                pauseResumeButton.textContent = "Restart";
+                pauseResumeButton.removeEventListener("click", togglePause);
+                pauseResumeButton.addEventListener("click", restartSimulation);
+            }
+        }
+
+        function drawGrid() {
+            ctx.strokeStyle = "#444";
+            ctx.lineWidth = 2.0;
+            for (let x = 0; x < canvas.width; x += 50) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            for (let y = 0; y < canvas.height; y += 50) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+        }
+
+        function updateOrbit() {
+            if (!running) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawGrid();
+            
+            ctx.fillStyle = "yellow";
+            ctx.beginPath();
+            ctx.arc(starX, 300, 10, 0, Math.PI * 2);
+            ctx.fill();
+
+            let x = a * Math.cos(theta) + 300;
+            let y = b * Math.sin(theta) + 300;
+            
+            let r = Math.sqrt((x - starX) ** 2 + (y - 300) ** 2);
+            let v = Math.sqrt(G * M * (2 / r - 1 / a));
+            
+            speedEl.textContent = v.toExponential(2);
+            distanceEl.textContent = r.toFixed(2);
+
+            trace.push({ x, y });
+            if (trace.length > 500) trace.shift();
+            
+            ctx.strokeStyle = "lightblue";
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            for (let i = 0; i < trace.length; i++) {
+                ctx.lineTo(trace[i].x, trace[i].y);
+            }
+            ctx.stroke();
+
+            ctx.fillStyle = "blue";
+            ctx.beginPath();
+            ctx.arc(x, y, 8, 0, Math.PI * 2);
+            ctx.fill();
+
+            theta += 0.01;
+            requestAnimationFrame(updateOrbit);
+        }
+
+        function togglePause() {
+            running = !running;
+            pauseResumeButton.textContent = running ? "Pause" : "Resume";
+            if (running) updateOrbit();
+        }
+
+        pauseResumeButton.addEventListener("click", togglePause);
+
+        updateOrbit();
+    </script>
+</body>
+</html>
