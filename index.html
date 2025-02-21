@@ -3,14 +3,14 @@
 <head>
     <title>Elliptical Orbit Simulation</title>
     <style>
-        canvas { border: 1px solid black; background-color: black; }
+        canvas { border: 1px solid black; background-color: black; width: 100%; height: auto; max-width: 800px; }
         body { text-align: center; font-family: Arial, sans-serif; color: white; background-color: #222; }
         input, button { margin: 5px; padding: 5px; }
     </style>
 </head>
 <body>
     <h2>Elliptical Orbit Simulation</h2>
-    <canvas id="orbitCanvas" width="600" height="600"></canvas>
+    <canvas id="orbitCanvas"></canvas>
     <div>
         <p>Star Mass: <span id="starMass">0</span> kg</p>
         <p>Planet Mass: <span id="planetMass">0</span> kg</p>
@@ -34,7 +34,15 @@
     <script>
         const canvas = document.getElementById("orbitCanvas");
         const ctx = canvas.getContext("2d");
-        const pauseResumeButton = document.getElementById("pauseResume");
+	const pauseResumeButton = document.getElementById("pauseResume");
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth * 0.8;
+            canvas.height = canvas.width * 0.75;
+        }
+
+        window.addEventListener("resize", resizeCanvas);
+        resizeCanvas();
         
         const G = 6.67*Math.pow(10,-11);
         const minCeiledStar = Math.ceil(Math.pow(10,23));
@@ -47,7 +55,7 @@
         let e = Math.random() * 0.6 + 0.2;
         const b = a * Math.sqrt(1 - e * e);
         const f = a * e;
-        const starX = 300 + f;
+        const starX = canvas.width / 2 + f;
         
         let theta = 0;
         let running = true;
@@ -105,21 +113,21 @@
         function updateOrbit() {
             if (!running) return;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            drawGrid();
+	    drawGrid();
             
             ctx.fillStyle = "yellow";
             ctx.beginPath();
-            ctx.arc(starX, 300, 10, 0, Math.PI * 2);
+            ctx.arc(starX, canvas.height / 2, 10, 0, Math.PI * 2);
             ctx.fill();
 
-            let x = a * Math.cos(theta) + 300;
-            let y = b * Math.sin(theta) + 300;
+            let x = a * Math.cos(theta) + canvas.width / 2;
+            let y = b * Math.sin(theta) + canvas.height / 2;
             
-            let r = Math.sqrt((x - starX) ** 2 + (y - 300) ** 2);
+            let r = Math.sqrt((x - starX) ** 2 + (y - canvas.height / 2) ** 2);
             let v = Math.sqrt(G * M * (2 / r - 1 / a));
             
             speedEl.textContent = v.toExponential(2);
-            distanceEl.textContent = r.toFixed(2);
+            distanceEl.textContent = r.toFixed(0);
 
             trace.push({ x, y });
             if (trace.length > 500) trace.shift();
